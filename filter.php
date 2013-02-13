@@ -33,14 +33,33 @@ class filter_testcontext extends moodle_text_filter {
         if (!empty($text)) {
             switch ($this->context->contextlevel) {
                 case CONTEXT_BLOCK: $prefix = 'B'; break;
-                case CONTEXT_COURSE: $prefix = 'C'; break;
+                case CONTEXT_COURSE: 
+                    if ($this->context->instanceid == SITEID) {
+                        $prefix = 'F';
+                    } else {
+                        $prefix = 'C';
+                    }
+                    break;
                 case CONTEXT_COURSECAT: $prefix = 'G'; break;
                 case CONTEXT_MODULE: $prefix = 'M'; break;
                 case CONTEXT_SYSTEM: $prefix = 'S'; break;
                 case CONTEXT_USER: $prefix = 'B'; break;
                 default: $prefix = $this->context->contextlevel.':';
             }
-            return $prefix.' '.$text;
+            $backtrace = debug_backtrace();
+            $contextset = false;
+            foreach ($backtrace as $funccall) {
+                if (($funccall['function'] === 'format_string' ||
+                        $funccall['function'] === 'format_text') &&
+                                !empty($funccall['args'][2])) {
+                    $formatoptions = (array)$funccall['args'][2];
+                    $contextset = !empty($formatoptions['context']);
+                }
+            }
+            if (!$contextset) {
+                $prefix = '*'. $prefix;
+            }
+            return '<sub>'.$prefix.'</sub> '.$text;
         } else {
             return $text;
         }
