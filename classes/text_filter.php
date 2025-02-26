@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+namespace filter_testcontext;
+
 /**
  * This filter adds the indicator of context used for formatting
  *
@@ -21,39 +23,39 @@
  * @copyright  2013 Marina Glancy
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
-defined('MOODLE_INTERNAL') || die();
-
-/**
- * Activity name filtering
- */
-class filter_testcontext extends moodle_text_filter {
-
-    function filter($text, array $options = array()) {
+class text_filter extends \core_filters\text_filter {
+    #[\Override]
+    public function filter($text, array $options = []) {
         if (!empty($text)) {
             switch ($this->context->contextlevel) {
-                case CONTEXT_BLOCK: $prefix = 'B'; break;
-                case CONTEXT_COURSE: 
+                case CONTEXT_BLOCK: $prefix = 'B';
+                break;
+                case CONTEXT_COURSE:
                     if ($this->context->instanceid == SITEID) {
                         $prefix = 'F';
                     } else {
                         $prefix = 'C';
                     }
                     break;
-                case CONTEXT_COURSECAT: $prefix = 'G'; break;
-                case CONTEXT_MODULE: $prefix = 'M'; break;
-                case CONTEXT_SYSTEM: $prefix = 'S'; break;
-                case CONTEXT_USER: $prefix = 'B'; break;
+                case CONTEXT_COURSECAT: $prefix = 'G';
+                break;
+                case CONTEXT_MODULE: $prefix = 'M';
+                break;
+                case CONTEXT_SYSTEM: $prefix = 'S';
+                break;
+                case CONTEXT_USER: $prefix = 'B';
+                break;
                 default: $prefix = $this->context->contextlevel.':';
             }
             $backtrace = debug_backtrace();
             $contextset = false;
             foreach ($backtrace as $funccall) {
-                if (($funccall['function'] === 'format_string' ||
-                        $funccall['function'] === 'format_text') &&
-                                !empty($funccall['args'][2])) {
-                    $formatoptions = (array)$funccall['args'][2];
-                    $contextset = !empty($formatoptions['context']);
+                if ($funccall['function'] === 'format_text' && ($funccall['class'] ?? '') == \core\formatting::class) {
+                    $contextset = !empty($funccall['args'][2]);
+                    break;
+                }
+                if ($funccall['function'] === 'format_string') {
+                    $contextset = !empty($funccall['args'][2]);
                 }
             }
             if (!$contextset) {
